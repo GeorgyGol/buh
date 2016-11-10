@@ -49,6 +49,16 @@ def createParser():
                            help='''если != 0 - запись будет в серию файлов, каждый размером в <s>-строк. Если = 0 - запись в один (большой) файл''')
     
    
+    dest_db.add_argument('-u', '--user', default=None, required=True, 
+                           help='''Имя пользователя базы данных''')
+    dest_db.add_argument('-s', '--server', default='localhost',  
+                           help='''Имя хоста, сервера базы данных (по умолчанию = localhos)''')
+    dest_db.add_argument('-psw', '--password', default=None, required=True, 
+                           help='''Пароль пользователя базы данных''')
+    dest_db.add_argument('-db', '--database', default='BUH',  
+                           help='''Имя базы данных (по умолчанию = BUH)''')
+    dest_db.add_argument('-f', '--format', default='MSSQL',  
+                           help='''Формат базы данных, MSSQL или MySQL (по умолчанию = MSSQL)''')
     dest_db.add_argument('-t', '--table', default=None, required=True, 
                            help='''Имя целевой таблицы''')
     dest_db.add_argument('-d', '--direction', choices=['data', 'cat'], default='cat', 
@@ -62,10 +72,50 @@ def createParser():
 
 strWorkFile = 'D:\Drag\INDA'
 
+def workWithFile(namespace, clsWF):
+    if namespace.size == 0:
+        clsWF.CreateCSVHeaderFile(namespace.buf)
+    else:
+        clsWF.CreateCSVHeaderFiles(namespace.size, namespace.buf)
+
+def workWithDatabase(namespace):
+    strTableName=namespace.table
+    if strTableName==None:
+        print('Необходимо ввести имя целевой таблицы')
+        exit()
+    
+    if namespace.user=='' or namespace.password=='':
+        print('Необходимо ввести имя пользователя и пароль')
+        exit()
+    
+    cls=FileDirWork.cls2db(namespace.sfile, server=namespace.server, user=namespace.user,
+                 password=namespace.password, database=namespace.database, dbtype=namespace.format)
+    
+    if namespace.direction=='cat':
+        if ns.command=='ins':
+            cls.WriteHeaderToDB(strDBTableName=strTableName, 
+                     intBuffSize=ns.buf, bUpdateIfExsist=False, bNoErrorTable=False)
+        elif namespace.command=='ins_update':
+            cls.WriteHeaderToDB(strDBTableName=strTableName, 
+                    intBuffSize=namespace.buf, bUpdateIfExsist=True)
+        elif namespace.command=='create':
+            cls.CreateDestTable(direction=namespace.direction, tableName=strTableName)
+    elif namespace.direction=='data':
+        if namespace.command=='ins':
+            cls.WriteDataToDB(strDBTableName=strTableName, dtActDate=namespace.cur_date, intBuffSize=namespace.buf, 
+                            bUpdateIfExsist=False, bNoErrorTable=True)
+        elif namespace.command=='ins_update':
+            cls.WriteDataToDB(strDBTableName=strTableName, dtActDate=namespace.cur_date, intBuffSize=namespace.buf, 
+                            bUpdateIfExsist=True, bNoErrorTable=True)
+        elif namespace.command=='create':
+            cls.CreateDestTable(direction=namespace.direction, tableName=strTableName)
+    else:
+        print ('Error in command string params, use --help for help')
+
 if __name__ == '__main__':
     parser=createParser()
     ns=parser.parse_args()
-    
+    print(ns)
     print ('Work with ', ns.sfile)
     
     cls=FileDirWork.clsRW_CSV2WorkinkFormat(ns.sfile)
@@ -83,39 +133,11 @@ if __name__ == '__main__':
         print('Use key --help for print help')
         exit()
     elif ns.destination=='file':
-        
-        if ns.size == 0:
-            cls.CreateCSVHeaderFile(ns.buf)
-        else:
-            cls.CreateCSVHeaderFiles(ns.size, ns.buf)
+        workWithFile(ns, cls)
     else:
-        strTableName=ns.table
-        if strTableName==None:
-            print('Необходимо ввести имя целевой таблицы')
-            exit()
+        workWithDatabase(ns)
             
-        if ns.direction=='cat':
-            if ns.command=='ins':
-                cls.WriteHeaderToDB(strDBTableName=strTableName, 
-                        intBuffSize=ns.buf, bUpdateIfExsist=False)
-            elif ns.command=='ins_update':
-                cls.WriteHeaderToDB(strDBTableName=strTableName, 
-                        intBuffSize=ns.buf, bUpdateIfExsist=True)
-            elif ns.command=='create':
-                cls.CreateDestTable(direction=ns.direction, tableName=strTableName)
-        elif ns.direction=='data':
-            if ns.command=='ins':
-                cls.WriteDataToDB(strDBTableName=strTableName, dtActDate=ns.cur_date, intBuffSize=ns.buf, 
-                                  bUpdateIfExsist=False, bNoErrorTable=True)
-            elif ns.command=='ins_update':
-                cls.WriteDataToDB(strDBTableName=strTableName, dtActDate=ns.cur_date, intBuffSize=ns.buf, 
-                                  bUpdateIfExsist=True, bNoErrorTable=True)
-            elif ns.command=='create':
-                cls.CreateDestTable(direction=ns.direction, tableName=strTableName)
-        else:
-            print ('Error in command string params, use --help for help')
-            
-        print(ns)
+        
     
     
     

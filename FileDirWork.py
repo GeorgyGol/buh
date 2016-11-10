@@ -34,12 +34,12 @@ class clsRW_CSV2WorkinkFormat:
             'июл':'07', 'авг':'08', 'сен':'09', 
             'окт':'10', 'ноя':'11', 'дек':'12'}
     
-    __hash_fld_name='hash'
-    __date_fld_name='act_date'
-    __indi_code_fld_name='ind_code'
-    __indi_val_fld_name='ind_val'
-    __fld_name_for_hash=('okpo', 'inn', __date_fld_name)
-    __data_fld_keys=(__hash_fld_name,__indi_code_fld_name, __date_fld_name)
+    _hash_fld_name='hash'
+    _date_fld_name='act_date'
+    _indi_code_fld_name='ind_code'
+    _indi_val_fld_name='ind_val'
+    _fld_name_for_hash=('okpo', 'inn', _date_fld_name)
+    _data_fld_keys=(_hash_fld_name,_indi_code_fld_name, _date_fld_name)
     
     iMaxWidth=0
     
@@ -81,8 +81,8 @@ class clsRW_CSV2WorkinkFormat:
         #return self.GetCurDir() + '\\' + self.GetFileName().split('.')[-2]
      
     def __MakeHash(self, dct_Source, encoding='ASCII'):
-        strW='{0}{1}'.format(dct_Source[self.__fld_name_for_hash[0]], 
-                                    dct_Source[self.__fld_name_for_hash[1]])
+        strW='{0}{1}'.format(dct_Source[self._fld_name_for_hash[0]], 
+                                    dct_Source[self._fld_name_for_hash[1]])
         m = hashlib.md5()
         m.update(bytearray(strW.encode(encoding)))
         #print(str(hash(strW)).__len__())
@@ -124,9 +124,9 @@ class clsRW_CSV2WorkinkFormat:
         return self.rd_DictCSV
      
     def HeadersIdentity(self):
-        return {x for x in self.__Headers if x.isalpha() and x!=self.__date_fld_name}
+        return {x for x in self.__Headers if x.isalpha() and x!=self._date_fld_name}
     def DataIdentity(self):
-        return {x for x in self.__Headers if x.isdigit() or x in self.__fld_name_for_hash}
+        return {x for x in self.__Headers if x.isdigit() or x in self._fld_name_for_hash}
     
     def __CorrectFields(self, dctSource):
         def correctOkved(strOKVEDCode):
@@ -153,7 +153,7 @@ class clsRW_CSV2WorkinkFormat:
         flReader=self.__CreateSourceDictReader()
         flD=self.__OpenDestFile(isHead=True, strFileNum=str(lFileCnt))
         flWriter=self.__CreateDestDictWriter(fileDectID=flD, 
-                                             fldnames=self.HeadersIdentity() | {self.__hash_fld_name})
+                                             fldnames=self.HeadersIdentity() | {self._hash_fld_name})
         strDectFileName=flD.name
         lstBuff=list()
         def WriteRows(writer=None, srcList=list(), strPrintStatus=''):
@@ -166,7 +166,7 @@ class clsRW_CSV2WorkinkFormat:
             self.__CorrectFields(row)
             
             hdr_csv={k:v for k,v in row.items() if k in self.HeadersIdentity()}
-            hdr_csv.setdefault(self.__hash_fld_name, self.__MakeHash(hdr_csv))
+            hdr_csv.setdefault(self._hash_fld_name, self.__MakeHash(hdr_csv))
             lstBuff.append(hdr_csv)
             lRowCnt+=1
             if lRowCnt % intBuffSize == 0:
@@ -179,7 +179,7 @@ class clsRW_CSV2WorkinkFormat:
                 WriteRows(writer=flWriter, srcList=lstBuff, 
                           strPrintStatus='Writed {0} row in {1}'.format(lRowCnt, strDectFileName))
                 flD=self.__OpenDestFile(isHead=True, strFileNum=str(lFileCnt))
-                flWriter=self.__CreateDestDictWriter(fileDectID=flD, fldnames=self.HeadersIdentity() | {self.__hash_fld_name})
+                flWriter=self.__CreateDestDictWriter(fileDectID=flD, fldnames=self.HeadersIdentity() | {self._hash_fld_name})
                 strDectFileName=flD.name
         else:
             if lRowCnt % intBuffSize != 0:
@@ -192,13 +192,13 @@ class clsRW_CSV2WorkinkFormat:
         lRowCnt=0
         flReader=self.__CreateSourceDictReader()
         flD=self.__OpenDestFile(isHead=True)
-        flWriter=self.__CreateDestDictWriter(fileDectID=flD, fldnames=self.HeadersIdentity() | {self.__hash_fld_name})
+        flWriter=self.__CreateDestDictWriter(fileDectID=flD, fldnames=self.HeadersIdentity() | {self._hash_fld_name})
         lstBuff=list()
         
         for row in flReader:
             self.__CorrectFields(row)
             hdr_csv={k:v for k,v in row.items() if k in self.HeadersIdentity()}
-            hdr_csv.setdefault(self.__hash_fld_name, self.__MakeHash(hdr_csv))
+            hdr_csv.setdefault(self._hash_fld_name, self.__MakeHash(hdr_csv))
             lstBuff.append(hdr_csv)
             lRowCnt+=1
             if lRowCnt % intBuffSize == 0:
@@ -212,7 +212,7 @@ class clsRW_CSV2WorkinkFormat:
 
         print ('='*30 + 'All Done' + '='*30)
         return 0
-    
+    '''
     def __PrintHeaderStatusInsertion(self, a, b, c, d):
         print ('Affected {0} --> inserted {1}, updated {2}, ' \
                        'insert into error_table {3} '.format(a, b, c, d))
@@ -340,7 +340,144 @@ class clsRW_CSV2WorkinkFormat:
         else:
             db_cn.CreateBUHTable(strTableName=tableName)
         print ('Cоздана таблица {0}, тип = {1}'.format(tableName, direction))
+'''
+
+class cls2db(clsRW_CSV2WorkinkFormat):
+    __db_cn=None
     
+    def __init__(self, strFullCSVFilePath, server='', user='',
+                 password="", database='', dbtype=''):
+        clsRW_CSV2WorkinkFormat.__init__(self, strFullCSVFilePath)
+        print(server, user, password, database, dbtype)
+        self.__db_cn=SQLWork.SQLDB_connection(str_server=server, str_user=user,
+                str_password=password, str_database=database, db_type=dbtype)
+        
+        
+    def __PrintHeaderStatusInsertion(self, a, b, c, d):
+        print ('Affected {0} --> inserted {1}, updated {2}, ' \
+                       'insert into error_table {3} '.format(a, b, c, d))
+    
+    def WriteHeaderToDB(self, strDBTableName=SQLWork.cstr_DefHeaderTableName, 
+                        intBuffSize=1000, bUpdateIfExsist=True, bNoErrorTable=False,
+                        strHeaderErrorTableName=SQLWork.cstr_HeaderErrorTableName):
+        
+        print('Insert header to DB, work table = {0}, ' \
+              'update_if_exsist = {1}, create_error_table = {2}, ' \
+              ' error table = {3}'.format(strDBTableName, bUpdateIfExsist, not bNoErrorTable, 
+                                       strHeaderErrorTableName))
+       
+        if not bUpdateIfExsist and not bNoErrorTable:
+            self.__db_cn.CreateHeaderTable(strTableName=strHeaderErrorTableName, bDeleteIfExsist=True)
+        
+        lRowCnt=0
+        flReader=super()._clsRW_CSV2WorkinkFormat__CreateSourceDictReader()
+        
+        iInsertRow=0
+        iUpdateRow=0
+        iErrInsert=0
+        
+        for row in flReader:
+            
+            super()._clsRW_CSV2WorkinkFormat__CorrectFields(row)
+            hdr_csv={k:v for k,v in row.items() if k in clsRW_CSV2WorkinkFormat.HeadersIdentity(self)}
+            hdr_csv.setdefault(clsRW_CSV2WorkinkFormat._hash_fld_name, super()._clsRW_CSV2WorkinkFormat__MakeHash(hdr_csv))
+            
+            if self.__db_cn.InsertIntoCatTable(strDBTableName, hdr_csv):
+                iInsertRow+=1
+            elif bUpdateIfExsist:
+                self.__db_cn.UpdateCatTable(strDBTableName, hdr_csv)
+                iUpdateRow+=1
+            elif not bNoErrorTable:
+                self.__db_cn.InsertIntoCatTable(strHeaderErrorTableName, hdr_csv)
+                iErrInsert+=1
+                
+            lRowCnt+=1
+
+            if lRowCnt % intBuffSize == 0:
+                self.__db_cn.CommitTransaction()
+                self.__PrintHeaderStatusInsertion(lRowCnt, iInsertRow, iUpdateRow, iErrInsert)
+            
+        else:
+            if lRowCnt % intBuffSize != 0:
+                self.__db_cn.CommitTransaction()
+                self.__PrintHeaderStatusInsertion(lRowCnt, iInsertRow, iUpdateRow, iErrInsert)
+                
+        print ('<>'*30 + 'All Done' + '<>'*30)
+        return 0
+    
+    def WriteDataToDB(self, strDBTableName=SQLWork.cstr_DefBUHTableName, dtActDate=datetime.datetime.now(),
+                        intBuffSize=100, bUpdateIfExsist=True, bNoErrorTable=False,
+                        strErrorTableName=SQLWork.cstr_BUHErrorTableName):
+        print('Insert data to DB, work table = {0}, ' \
+              'update_if_exsist = {1}, create_error_table = {2}, ' \
+              ' error table = {3}'.format(strDBTableName, bUpdateIfExsist, not bNoErrorTable, 
+                                       strErrorTableName))
+        if not bUpdateIfExsist and not bNoErrorTable:
+            self.__db_cn.CreateBUHTable(strTableName=strErrorTableName, bDeleteIfExsist=True)
+        
+        lRowCnt=0
+        flReader=super()._clsRW_CSV2WorkinkFormat__CreateSourceDictReader()
+        
+        iInsertRow=0
+        iUpdateRow=0
+        iErrInsert=0
+        cur_dt=None
+        
+        if dtActDate is not None:
+            cur_dt=datetime.datetime.strptime(dtActDate, "%d.%m.%Y")
+        
+        for row in flReader:
+            
+            data_csv={k:v for k,v in row.items() if k in clsRW_CSV2WorkinkFormat.DataIdentity(self)}
+            data_csv.setdefault(clsRW_CSV2WorkinkFormat._hash_fld_name, super()._clsRW_CSV2WorkinkFormat__MakeHash(data_csv))
+            
+            if data_csv.get(clsRW_CSV2WorkinkFormat._date_fld_name) is None:
+                data_csv.setdefault(clsRW_CSV2WorkinkFormat._date_fld_name, str(cur_dt))
+            else:
+                data_csv[clsRW_CSV2WorkinkFormat._date_fld_name]=str(datetime.datetime.strptime(data_csv.get(clsRW_CSV2WorkinkFormat._date_fld_name), "%Y%m%d"))
+            if data_csv[clsRW_CSV2WorkinkFormat._date_fld_name]=='None':
+                print('Error! Empty current date!')
+                exit()
+            for k, v in data_csv.items():
+                
+                if v=='0':continue
+                
+                if k.isdigit():
+                    dct={clsRW_CSV2WorkinkFormat._date_fld_name:data_csv[clsRW_CSV2WorkinkFormat._date_fld_name], 
+                         clsRW_CSV2WorkinkFormat._hash_fld_name:data_csv[clsRW_CSV2WorkinkFormat._hash_fld_name], 
+                         clsRW_CSV2WorkinkFormat._indi_code_fld_name:k, clsRW_CSV2WorkinkFormat._indi_val_fld_name:v}
+                    #print (dct)
+                    #continue
+                    if self.__db_cn.InsertIntoBUHTable(strDBTableName, dct):
+                        iInsertRow+=1
+                    elif bUpdateIfExsist:
+                        self.__db_cn.UpdateBUHTable(strDBTableName, dct)
+                        iUpdateRow+=1
+                    elif not bNoErrorTable:
+                        self.__db_cn.InsertIntoBUHTable(strErrorTableName, dct)
+                        iErrInsert+=1
+
+            lRowCnt+=1
+            if lRowCnt % intBuffSize == 0:
+                self.__db_cn.CommitTransaction()
+                self.__PrintHeaderStatusInsertion(lRowCnt, iInsertRow, iUpdateRow, iErrInsert)
+        else:
+            if lRowCnt % intBuffSize != 0:
+                self.__db_cn.CommitTransaction()
+                self.__PrintHeaderStatusInsertion(lRowCnt, iInsertRow, iUpdateRow, iErrInsert)
+        print ('//'*30 + 'All Done' + '\\'*30)
+        
+        return 0    
+    
+    def CreateDestTable(self, direction='cat', tableName='CATALOG'):
+        
+        if direction=='cat':
+            self.__db_cn.CreateHeaderTable(strTableName=tableName)
+        else:
+            self.__db_cn.CreateBUHTable(strTableName=tableName)
+        print ('Cоздана таблица {0}, тип = {1}'.format(tableName, direction))
+
+
 if __name__ == '__main__':
     #MakeReadableCSV('D:\Drag\INDA\data-20140829t000000-structure-20121231t000000.csv')
     #cls=clsRW_CSV2WorkinkFormat('/home/egor/csv_source/data-20140829t000000-structure-20121231t000000.csv')

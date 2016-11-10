@@ -7,6 +7,7 @@ Created on 21 окт. 2016 г.
 @author: ggolyshev
 '''
 import pymssql
+import MySQLdb
 
 cstr_DefHeaderTableName='CATALOG'
 cstr_HeaderErrorTableName=cstr_DefHeaderTableName + '_err_insert'
@@ -113,17 +114,21 @@ class SQLDB_connection:
     __conn=None
     __strDBName=''
     
-    def __init__(self, str_server='L26-SRV0', str_user=r'cmasf\ggolyshev',
-                str_password="rtylj333", str_database='BUH'):
-        try:
-            self.__conn=pymssql.connect(host=str_server, user=str_user, password=str_password, database=str_database)
-            self.__strDBName=str_database
-        except pymssql.OperationalError:
-            print('Program terminated, connection failed - check user name and pass')
-            exit()
-        except pymssql.InterfaceError:
-            print('Program terminated, connection failed - check server name')
-            exit()
+    def __init__(self, str_server='', str_user=r'',
+                str_password="", str_database='', db_type=''):
+        if db_type=='MSSQL':
+            try:
+                self.__conn=pymssql.connect(host=str_server, user=str_user, password=str_password, database=str_database)
+                self.__strDBName=str_database
+            except pymssql.OperationalError:
+                print('Program terminated, connection failed - check user name and pass')
+                exit()
+            except pymssql.InterfaceError:
+                print('Program terminated, connection failed - check server name')
+                exit()
+        else:
+            self.__conn=MySQLdb.connect(host=str_server, user=str_user, passwd=str_password, db=str_database)
+            
         #OperationalError 20002
         #InterfaceError
         
