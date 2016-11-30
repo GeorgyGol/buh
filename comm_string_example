@@ -1,0 +1,7 @@
+-s /home/egor/csv_source/data-20140829t000000-structure-20121231t000000.csv db -u cmasf\\ggolyshev -s L26-SRV0 -db BUH -psw rtylj333 -f MSSQL -t BUH -d data -c ins -cd 31.12.2012
+
+-s /home/egor/csv_source/data-20140829t000000-structure-20121231t000000.csv db -u egor -s localhost -db BUH -psw dragon -f MySQL -t BUH -d data -c ins -cd 31.12.2012
+
+-s /home/egor/csv_source/data-20140829t000000-structure-20121231t000000.csv file -b 10000 -mc -s 10000
+
+-s /home/egor/csv_source/data-20140829t000000-structure-20121231t000000.csv db -db BUH -f sqlite -t BUH_DAT -d data -c ins -cd 31.12.2012

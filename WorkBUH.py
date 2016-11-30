@@ -9,6 +9,7 @@ Created on 14 окт. 2016 г.
 
 import FileDirWork
 import argparse
+from SQLWork import const_direction
 
 dest_file=None
 dest_db=None
@@ -49,11 +50,11 @@ def createParser():
                            help='''если != 0 - запись будет в серию файлов, каждый размером в <s>-строк. Если = 0 - запись в один (большой) файл''')
     
    
-    dest_db.add_argument('-u', '--user', default=None, required=True, 
+    dest_db.add_argument('-u', '--user', default='None', required=False, 
                            help='''Имя пользователя базы данных''')
     dest_db.add_argument('-s', '--server', default='localhost',  
                            help='''Имя хоста, сервера базы данных (по умолчанию = localhos)''')
-    dest_db.add_argument('-psw', '--password', default=None, required=True, 
+    dest_db.add_argument('-psw', '--password', default=None, required=False, 
                            help='''Пароль пользователя базы данных''')
     dest_db.add_argument('-db', '--database', default='BUH',  
                            help='''Имя базы данных (по умолчанию = BUH)''')
@@ -61,7 +62,7 @@ def createParser():
                            help='''Формат базы данных, MSSQL или MySQL (по умолчанию = MSSQL)''')
     dest_db.add_argument('-t', '--table', default=None, required=True, 
                            help='''Имя целевой таблицы''')
-    dest_db.add_argument('-d', '--direction', choices=['data', 'cat'], default='cat', 
+    dest_db.add_argument('-d', '--direction', choices=['data', 'cat'], default=const_direction.header, 
                            help='''Направление работы (каталог <-> данные)''')
     dest_db.add_argument('-c', '--command', choices=['create', 'ins', 'ins_update'], default='ins_update', 
                            help='''Команды работы с базой данных: create - создать целевую таблбицу, ins - вставить данные из файла, ins_update=вставить данные, имеющиеся обновить''')
@@ -84,14 +85,23 @@ def workWithDatabase(namespace):
         print('Необходимо ввести имя целевой таблицы')
         exit()
     
-    if namespace.user=='' or namespace.password=='':
+    #print(namespace)
+    
+    if namespace.format != 'sqlite' and (namespace.user=='None' or namespace.password=='None') :
         print('Необходимо ввести имя пользователя и пароль')
         exit()
     
     cls=FileDirWork.cls2db(namespace.sfile, server=namespace.server, user=namespace.user,
                  password=namespace.password, database=namespace.database, dbtype=namespace.format)
     
-    if namespace.direction=='cat':
+    if namespace.direction==const_direction.header:
+        if namespace.format=='sqlite':
+            if ns.command=='ins' or namespace.command=='ins_update':
+                cls.WriteHeaderToSqlite(strDBTableName=strTableName, intBuffSize=ns.buf) 
+            elif namespace.command=='create':
+                cls.CreateDestTable(direction=namespace.direction, tableName=strTableName)
+            exit()
+        
         if ns.command=='ins':
             cls.WriteHeaderToDB(strDBTableName=strTableName, 
                      intBuffSize=ns.buf, bUpdateIfExsist=False, bNoErrorTable=False)
@@ -101,6 +111,13 @@ def workWithDatabase(namespace):
         elif namespace.command=='create':
             cls.CreateDestTable(direction=namespace.direction, tableName=strTableName)
     elif namespace.direction=='data':
+        if namespace.format=='sqlite':
+            if ns.command=='ins' or namespace.command=='ins_update':
+                cls.WriteDataToSqlite(strDBTableName=strTableName, intBuffSize=ns.buf, dtActDate=namespace.cur_date) 
+            elif namespace.command=='create':
+                cls.CreateDestTable(direction=namespace.direction, tableName=strTableName)
+            exit()
+        
         if namespace.command=='ins':
             cls.WriteDataToDB(strDBTableName=strTableName, dtActDate=namespace.cur_date, intBuffSize=namespace.buf, 
                             bUpdateIfExsist=False, bNoErrorTable=True)
@@ -115,11 +132,11 @@ def workWithDatabase(namespace):
 if __name__ == '__main__':
     parser=createParser()
     ns=parser.parse_args()
-    print(ns)
+    
     print ('Work with ', ns.sfile)
     
     cls=FileDirWork.clsRW_CSV2WorkinkFormat(ns.sfile)
-    print(ns)
+    
     if ns.print_head:
         print ('CSV file headers = ', cls.Headers())
         
@@ -136,8 +153,3 @@ if __name__ == '__main__':
         workWithFile(ns, cls)
     else:
         workWithDatabase(ns)
-            
-        
-    
-    
-    
